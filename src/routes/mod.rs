@@ -1,1 +1,2 @@
-pub mod health_checker;
+pub mod handlers;
+mod health_checker;

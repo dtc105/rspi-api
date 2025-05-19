@@ -29,7 +29,8 @@ Cargo.toml: init
 		uuid -F "uuid/serde uuid/v4" \
 		rusqlite \
 		jsonwebtoken \
-		bcrypt 
+		bcrypt \
+		validator -F validator/derive
 
 	@touch $@
 

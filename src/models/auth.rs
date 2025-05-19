@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -26,5 +27,6 @@ fn validate_role(role: &str) -> Result<(), ValidationError> {
         return Ok(());
     }
     
-    Err(ValidationError::new("Invalid role.  Valid roles: [\"admin\", \"moderator\", \"user\"]"))
+    Err(ValidationError::new("value_error")
+        .with_message(Cow::from("Role invalid.  Valid roles: [\"admin\", \"moderator\", \"user\"]")))
 }
