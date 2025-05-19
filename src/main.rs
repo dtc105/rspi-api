@@ -1,4 +1,5 @@
 mod routes;
+mod models;
 
 use actix_cors::Cors;
 use actix_web::{App, HttpResponse, HttpServer, get, http::header, middleware::Logger, web};
