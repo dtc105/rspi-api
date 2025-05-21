@@ -29,5 +29,5 @@ async fn main() -> std::io::Result<()> {
 
     println!("Server running on port {port}! 🚀");
 
-    return server.await;
+    server.await
 }

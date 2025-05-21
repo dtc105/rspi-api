@@ -28,6 +28,8 @@ Cargo.toml: init
 		dotenv \
 		uuid -F "uuid/serde uuid/v4" \
 		rusqlite \
+		r2d2 \
+		r2d2_sqlite \
 		jsonwebtoken \
 		bcrypt \
 		validator -F validator/derive

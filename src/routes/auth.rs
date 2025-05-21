@@ -1,5 +1,7 @@
 use actix_web::{HttpResponse, Responder, web};
 
+use crate::config::database::AppState;
+
 pub fn router() -> actix_web::Scope {
     web::scope("/auth")
         .route("/token", web::get().to(read_token))
@@ -9,7 +11,7 @@ pub fn router() -> actix_web::Scope {
         .route("/username", web::patch().to(change_username))
 }
 
-async fn read_token() -> impl Responder {
+async fn read_token(state: web::Data<AppState>) -> impl Responder {
     HttpResponse::NotImplemented()
 }
 
