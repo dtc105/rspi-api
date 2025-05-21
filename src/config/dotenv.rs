@@ -9,4 +9,6 @@ pub fn init() {
 
     dotenv().ok();
     env_logger::init();
+    println!("Environment variables loaded! 󰑓");
 }
+

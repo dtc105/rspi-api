@@ -1,5 +1,5 @@
 use actix_web::web::Data;
-use rusqlite::{Connection, Result};
+use rusqlite::Connection;
 use std::sync::Mutex;
 
 pub struct AppState {
@@ -10,5 +10,11 @@ pub fn init() -> Data<AppState> {
     let db_path: String = std::env::var("DB_PATH").expect("DB_PATH in .env must be set");
     let db_conn: Connection = Connection::open(db_path).expect("Couldn't connect to database!");
 
-    Data::new(AppState { db: Mutex::new(db_conn) })
+    let shared_connection = Data::new(AppState {
+        db: Mutex::new(db_conn),
+    });
+
+    println!("Connected to database! 💾");
+
+    shared_connection
 }
