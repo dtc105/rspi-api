@@ -14,19 +14,21 @@ pub struct User {
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct NewUser {
-    #[validate(length(min=3, max=32))]
+    #[validate(length(min = 3, max = 32))]
     pub username: String,
-    #[validate(length(min=8, max=1024))]
+    #[validate(length(min = 8, max = 1024))]
     pub password: String,
     #[validate(custom(function = "validate_role"))]
-    pub role: String
+    pub role: String,
 }
 
 fn validate_role(role: &str) -> Result<(), ValidationError> {
     if ["admin", "moderator", "user"].contains(&role) {
         return Ok(());
     }
-    
-    Err(ValidationError::new("value_error")
-        .with_message(Cow::from("Role invalid.  Valid roles: [\"admin\", \"moderator\", \"user\"]")))
+
+    Err(ValidationError::new("value_error").with_message(Cow::from(
+        "Role invalid.  Valid roles: [\"admin\", \"moderator\", \"user\"]",
+    )))
 }
+

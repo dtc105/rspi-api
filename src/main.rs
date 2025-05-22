@@ -1,4 +1,6 @@
 mod config;
+mod controllers;
+mod dtos;
 mod models;
 mod routes;
 
