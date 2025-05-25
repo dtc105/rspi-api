@@ -2,6 +2,9 @@ CARGO=cargo
 
 SRC_DIR=src
 BUILD_DIR=target
+DB=~/.local/share/raspi.db
+OLD_DB=~/.local/share/old_raspi.db
+DB_DIR=$(SRC_DIR)/database
 
 DOCKER_NAME=rspi-api-docker
 
@@ -47,6 +50,14 @@ run: build
 
 test: build
 	cargo test
+
+database:
+	-sqlite3 ~/.local/share/raspi.db .dump | grep -v "^CREATE" | grep -v "^[[:blank:]]" | grep -v "^);" > $(DB_DIR)/dump.sql
+	-rm $(OLD_DB)
+	-mv $(DB) $(OLD_DB)
+	sqlite3 $(DB) < $(DB_DIR)/schema.sql
+	-sqlite3 $(DB) < $(DB_DIR)/dump.sql
+	-rm $(DB_DIR)/dump.sql
 
 clean:
 	rm -fr $(BUILD_DIR)/

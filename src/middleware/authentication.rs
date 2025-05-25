@@ -2,10 +2,12 @@ use actix_web::{
     Error, HttpMessage, HttpResponse,
     body::{BoxBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
+    http::header,
 };
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm::HS256, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::future::{Ready, ready};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -69,14 +71,22 @@ where
                 Err(_) => {
                     return Box::pin(async {
                         Ok(req.into_response(
-                            HttpResponse::Forbidden().finish().map_into_boxed_body(),
+                            HttpResponse::Unauthorized()
+                                .content_type(header::ContentType::json())
+                                .json(json!({"error": "Unauthorized", "message": "Must login."}))
+                                .map_into_boxed_body(),
                         ))
                     });
                 }
             },
             None => {
                 return Box::pin(async {
-                    Ok(req.into_response(HttpResponse::Forbidden().finish().map_into_boxed_body()))
+                    Ok(req.into_response(
+                        HttpResponse::Unauthorized()
+                            .content_type(header::ContentType::json())
+                            .json(json!({"error": "Unauthorized", "message": "Must login."}))
+                            .map_into_boxed_body(),
+                    ))
                 });
             }
         };
