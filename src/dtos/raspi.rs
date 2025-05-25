@@ -11,7 +11,7 @@ pub enum FloatOrString {
 pub struct SystemUptime {
     #[serde(rename = "upTime")]
     pub up_time: FloatOrString,
-    #[serde(rename = "idle_time")]
+    #[serde(rename = "idleTime")]
     pub idle_time: FloatOrString,
 }
 

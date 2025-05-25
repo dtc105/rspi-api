@@ -1,6 +1,6 @@
-use actix_web::{HttpResponse, Responder, web};
+use crate::controllers::auth::*;
 
-use crate::config::database::AppState;
+use actix_web::web;
 
 pub fn router() -> actix_web::Scope {
     web::scope("/auth")
@@ -9,24 +9,4 @@ pub fn router() -> actix_web::Scope {
         .route("/register", web::post().to(register))
         .route("/password", web::patch().to(change_password))
         .route("/username", web::patch().to(change_username))
-}
-
-async fn read_token(state: web::Data<AppState>) -> impl Responder {
-    HttpResponse::NotImplemented()
-}
-
-async fn login() -> impl Responder {
-    HttpResponse::NotImplemented()
-}
-
-async fn register() -> impl Responder {
-    HttpResponse::NotImplemented()
-}
-
-async fn change_password() -> impl Responder {
-    HttpResponse::NotImplemented()
-}
-
-async fn change_username() -> impl Responder {
-    HttpResponse::NotImplemented()
 }

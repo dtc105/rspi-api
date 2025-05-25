@@ -32,7 +32,8 @@ Cargo.toml: init
 		r2d2_sqlite \
 		jsonwebtoken \
 		bcrypt \
-		validator -F validator/derive
+		validator -F validator/derive \
+		futures_util
 
 	@touch $@
 
@@ -48,6 +49,9 @@ test: build
 	cargo test
 
 clean:
+	rm -fr $(BUILD_DIR)/
+	rm Cargo.toml
+	rm Cargo.lock
 	cargo clean
 
 docker: build

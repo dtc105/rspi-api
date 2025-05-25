@@ -3,18 +3,19 @@ name = "rspi-api"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]  
+[dependencies]
 actix-cors = "0.7.1"
 actix-web = "4.11.0"
 bcrypt = "0.17.0"
 chrono = { version = "0.4.41", features = ["serde"] }
 dotenv = "0.15.0"
 env_logger = "0.11.8"
+futures-util = "0.3.31"
 jsonwebtoken = "9.3.1"
 r2d2 = "0.8.10"
 r2d2_sqlite = "0.28.0"
 rusqlite = "0.35.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
-uuid = { version = "1.16.0", features = ["serde", "v4"] }
+uuid = { version = "1.17.0", features = ["serde", "v4"] }
 validator = { version = "0.20.0", features = ["derive"] }

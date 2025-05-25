@@ -1,0 +1,93 @@
+use actix_web::{
+    Error, HttpMessage, HttpResponse,
+    body::{BoxBody, MessageBody},
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
+};
+use futures_util::future::LocalBoxFuture;
+use jsonwebtoken::{Algorithm::HS256, DecodingKey, Validation, decode};
+use serde::{Deserialize, Serialize};
+use std::future::{Ready, ready};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Claims {
+    pub sub: i64,
+    pub role: String,
+    pub iat: usize,
+    pub exp: usize,
+}
+
+pub struct AuthenticationMiddleware;
+
+impl<S, B> Transform<S, ServiceRequest> for AuthenticationMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S::Future: 'static,
+    B: 'static + MessageBody,
+{
+    type Response = ServiceResponse<BoxBody>;
+    type Error = Error;
+    type InitError = ();
+    type Transform = AuthenticationMiddlewareService<S>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(AuthenticationMiddlewareService { service }))
+    }
+}
+
+pub struct AuthenticationMiddlewareService<S> {
+    service: S,
+}
+
+impl<S, B> Service<ServiceRequest> for AuthenticationMiddlewareService<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S::Future: 'static,
+    B: 'static + MessageBody,
+{
+    type Response = ServiceResponse<BoxBody>;
+    type Error = Error;
+    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let secret = std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`");
+        let token = req
+            .headers()
+            .get("Authorization")
+            .and_then(|t| t.to_str().ok())
+            .and_then(|t| t.strip_prefix("Bearer "));
+
+        let claims = match token {
+            Some(t) => match decode::<Claims>(
+                t,
+                &DecodingKey::from_secret(secret.as_ref()),
+                &Validation::new(HS256),
+            ) {
+                Ok(data) => data.claims,
+                Err(_) => {
+                    return Box::pin(async {
+                        Ok(req.into_response(
+                            HttpResponse::Forbidden().finish().map_into_boxed_body(),
+                        ))
+                    });
+                }
+            },
+            None => {
+                return Box::pin(async {
+                    Ok(req.into_response(HttpResponse::Forbidden().finish().map_into_boxed_body()))
+                });
+            }
+        };
+
+        req.extensions_mut().insert(claims);
+
+        let fut = self.service.call(req);
+
+        Box::pin(async move {
+            let res = fut.await?.map_into_boxed_body();
+            Ok(res)
+        })
+    }
+}

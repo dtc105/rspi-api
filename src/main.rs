@@ -1,11 +1,13 @@
 mod config;
 mod controllers;
 mod dtos;
+mod middleware;
 mod models;
 mod routes;
 
 use actix_web::{App, HttpServer, dev::Server, middleware::Logger, web};
 use config::{cors, database, dotenv};
+use middleware::authentication::AuthenticationMiddleware;
 use routes::routes::router;
 
 #[actix_web::main]
@@ -24,6 +26,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(db.clone()))
             .wrap(cors::options())
             .wrap(Logger::default())
+            .wrap(AuthenticationMiddleware)
             .configure(router)
     })
     .bind(("127.0.0.1", port))?

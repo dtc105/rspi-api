@@ -11,7 +11,7 @@ pub mod routes {
 
     pub fn router(config: &mut web::ServiceConfig) {
         config.service(
-            web::scope("/api")
+            web::scope("")
                 .service(auth::router())
                 .service(counter::router())
                 .service(raspi::router()),
