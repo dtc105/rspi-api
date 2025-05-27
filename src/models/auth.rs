@@ -18,8 +18,6 @@ pub struct NewUser {
     pub username: String,
     #[validate(length(min = 8, max = 1024))]
     pub password: String,
-    #[validate(custom(function = "validate_role"))]
-    pub role: String,
 }
 
 fn validate_role(role: &str) -> Result<(), ValidationError> {
@@ -31,4 +29,3 @@ fn validate_role(role: &str) -> Result<(), ValidationError> {
         "Role invalid.  Valid roles: [\"admin\", \"moderator\", \"user\"]",
     )))
 }
-

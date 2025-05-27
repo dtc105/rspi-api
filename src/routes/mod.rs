@@ -3,18 +3,18 @@ mod counter;
 mod raspi;
 
 pub mod routes {
-    use actix_web::web;
-
     use super::auth;
     use super::counter;
     use super::raspi;
 
-    pub fn router(config: &mut web::ServiceConfig) {
-        config.service(
+    use actix_web::web;
+
+    pub fn router(cfg: &mut web::ServiceConfig) {
+        cfg.service(
             web::scope("")
-                .service(auth::router())
-                .service(counter::router())
-                .service(raspi::router()),
+                .configure(auth::router)
+                //.service(counter::router())
+                .configure(raspi::router),
         );
     }
 }

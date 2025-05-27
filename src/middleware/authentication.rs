@@ -4,6 +4,7 @@ use actix_web::{
     dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
     http::header,
 };
+use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm::HS256, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
@@ -14,8 +15,8 @@ use std::future::{Ready, ready};
 pub struct Claims {
     pub sub: i64,
     pub role: String,
-    pub iat: usize,
-    pub exp: usize,
+    pub iat: DateTime<Utc>,
+    pub exp: DateTime<Utc>,
 }
 
 pub struct AuthenticationMiddleware;
@@ -54,6 +55,7 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
+        println!("In middleware");
         let secret = std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`");
         let token = req
             .headers()

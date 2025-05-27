@@ -16,13 +16,13 @@ async fn main() -> std::io::Result<()> {
     let db: web::Data<database::AppState> = database::init();
 
     let port: u16 = std::env::var("PORT")
-        .expect("PORT must be defined in `.env`.")
+        .expect("`PORT` must be defined in `.env`.")
         .parse()
         .unwrap();
 
     let server: Server = HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(db.clone()))
+            .app_data(db.clone())
             .wrap(cors::options())
             .wrap(Logger::default())
             .configure(router)
