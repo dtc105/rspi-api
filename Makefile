@@ -38,7 +38,7 @@ Cargo.toml: init
 		validator -F validator/derive \
 		futures_util
 
-	@touch $@
+	-touch $@
 
 build: $(BUILD_DIR)/release/rspi-api
 

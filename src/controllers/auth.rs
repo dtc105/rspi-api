@@ -1,13 +1,11 @@
 use crate::models::auth::*;
 use crate::{config::database::AppState, middleware::authentication::Claims};
 
-use actix_web::cookie::Cookie;
-use actix_web::error::ErrorBadRequest;
-use actix_web::{Error, HttpResponse, Responder, error, web};
-use bcrypt::{DEFAULT_COST, hash};
+use actix_web::{Error, HttpResponse, Responder, cookie::Cookie, error, web};
+use bcrypt::{DEFAULT_COST, hash, verify};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use serde_json::json;
 use validator::Validate;
 
@@ -48,7 +46,52 @@ pub async fn login(
         .get()
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
-    Ok(HttpResponse::NotImplemented().finish())
+    let query: Option<User> = conn
+        .query_row(
+            r#"
+            SELECT *
+            FROM users
+            WHERE username = ?1;
+            "#
+        , [&body.username], |row| User::from_row(row)
+    )
+    .optional()
+    .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;  
+
+    match query {
+        Some(user) => {
+            let is_password_correct: bool = verify(&body.password, &user.password)
+                .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+
+            if !is_password_correct {
+                return Ok(HttpResponse::Unauthorized()
+                    .json(json!({
+                        "error": "Unauthorized",
+                        "message": "Incorrect username or password."
+                    })));
+            }
+
+            let token = sign_token(&user.id, &user.role)
+                .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+
+            let cookie = Cookie::build("Authorization", token.clone())
+                .http_only(true)
+                .secure(false)
+                .path("/")
+                .finish();
+
+            return Ok(HttpResponse::Created().cookie(cookie).json(json!({
+                "id": &user.id,
+                "username": &user.username,
+                "role": &user.role
+            })));
+        },
+        None => return Ok(HttpResponse::NotFound()
+            .json(json!({
+                "error": "NotFound", 
+                "message": "User not found."
+            })))
+    };
 }
 
 /// Handles user registration and assigns a JWT
@@ -100,7 +143,7 @@ pub async fn register(
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     // Check if the username already exists
-    let user_exists: bool = conn
+    let user_exists = conn
         .query_row(
             r#"
             SELECT 1
@@ -110,7 +153,9 @@ pub async fn register(
             [&body.username],
             |row| row.get(0),
         )
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+        .optional()
+        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?
+        .is_some();
 
     if user_exists {
         return Ok(HttpResponse::Conflict()
@@ -133,7 +178,7 @@ pub async fn register(
     let token = sign_token(&conn.last_insert_rowid(), &"user".to_string())
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
-    let cookie = Cookie::build("token", token.clone())
+    let cookie = Cookie::build("Authorization", token.clone())
         .http_only(true)
         .secure(false)
         .path("/")
