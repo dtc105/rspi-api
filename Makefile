@@ -22,7 +22,7 @@ init:
 install: Cargo.toml
 
 Cargo.toml: init
-	cargo add actix-web \
+	cargo add actix-web -F actix-web/cookies \
 		actix-cors \
 		serde-json \
 		serde -F serde/derive \
@@ -36,7 +36,8 @@ Cargo.toml: init
 		jsonwebtoken \
 		bcrypt \
 		validator -F validator/derive \
-		futures_util
+		futures_util \
+		regex
 
 	-touch $@
 

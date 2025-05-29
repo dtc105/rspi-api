@@ -7,7 +7,7 @@ mod routes;
 
 use actix_web::{App, HttpServer, dev::Server, middleware::Logger, web};
 use config::{cors, database, dotenv};
-use routes::routes::router;
+use routes::router;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

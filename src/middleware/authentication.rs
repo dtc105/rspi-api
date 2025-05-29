@@ -3,6 +3,7 @@ use actix_web::{
     body::{BoxBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
     http::header,
+    web::Json,
 };
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
@@ -55,27 +56,24 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        println!("In middleware");
-        let secret = std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`");
-        let token = req
-            .headers()
-            .get("Authorization")
-            .and_then(|t| t.to_str().ok())
-            .and_then(|t| t.strip_prefix("Bearer "));
+        let secret: String =
+            std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`");
+        let token: Option<String> = req.cookie("Authorization").map(|c| c.value().to_owned());
 
         let claims = match token {
             Some(t) => match decode::<Claims>(
-                t,
+                t.as_str(),
                 &DecodingKey::from_secret(secret.as_ref()),
                 &Validation::new(HS256),
             ) {
                 Ok(data) => data.claims,
-                Err(_) => {
-                    return Box::pin(async {
+                Err(e) => {
+                    let error_message = e.to_string();
+                    return Box::pin(async move {
                         Ok(req.into_response(
                             HttpResponse::Unauthorized()
                                 .content_type(header::ContentType::json())
-                                .json(json!({"error": "Unauthorized", "message": "Must login."}))
+                                .json(json!({"error": "Unauthorized", "message": "78 Must login.", "e": error_message}))
                                 .map_into_boxed_body(),
                         ))
                     });
@@ -86,7 +84,7 @@ where
                     Ok(req.into_response(
                         HttpResponse::Unauthorized()
                             .content_type(header::ContentType::json())
-                            .json(json!({"error": "Unauthorized", "message": "Must login."}))
+                            .json(json!({"error": "Unauthorized", "message": "89 Must login."}))
                             .map_into_boxed_body(),
                     ))
                 });
