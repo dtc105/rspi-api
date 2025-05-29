@@ -14,8 +14,8 @@ fn sign_token(id: &i64, role: &String) -> Result<String, jsonwebtoken::errors::E
     let secret: String =
         std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`.");
 
-    let iat: DateTime<Utc> = Utc::now();
-    let exp: DateTime<Utc> = iat + Duration::days(30);
+    let iat: i64 = Utc::now().timestamp();
+    let exp: i64 = iat + Duration::days(30).num_seconds();
 
     let claims: Claims = Claims {
         sub: id.to_owned(),

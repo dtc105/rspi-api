@@ -16,8 +16,8 @@ use std::future::{Ready, ready};
 pub struct Claims {
     pub sub: i64,
     pub role: String,
-    pub iat: DateTime<Utc>,
-    pub exp: DateTime<Utc>,
+    pub iat: i64,
+    pub exp: i64,
 }
 
 pub struct AuthenticationMiddleware;
@@ -68,12 +68,11 @@ where
             ) {
                 Ok(data) => data.claims,
                 Err(e) => {
-                    let error_message = e.to_string();
                     return Box::pin(async move {
                         Ok(req.into_response(
                             HttpResponse::Unauthorized()
                                 .content_type(header::ContentType::json())
-                                .json(json!({"error": "Unauthorized", "message": "78 Must login.", "e": error_message}))
+                                .json(json!({"error": "Unauthorized", "message": "78 Must login."}))
                                 .map_into_boxed_body(),
                         ))
                     });
