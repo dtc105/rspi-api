@@ -1,16 +1,19 @@
-use crate::models::auth::*;
-use crate::{config::database::AppState, middleware::authentication::Claims};
+use crate::{
+    config::database::AppState,
+    dtos::{auth as dtos, global},
+    middleware::authentication::Claims,
+    models::auth as models,
+};
 
-use actix_web::{Error, HttpResponse, Responder, cookie::Cookie, error, web};
+use actix_web::{Error, HttpResponse, cookie::Cookie, error, web};
 use actix_web::{HttpMessage, HttpRequest};
 use bcrypt::{DEFAULT_COST, hash, verify};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use rusqlite::{OptionalExtension, params};
-use serde_json::json;
 use validator::Validate;
 
-fn sign_token(id: &i64, role: &String) -> Result<String, jsonwebtoken::errors::Error> {
+fn sign_token(user: &models::User) -> Result<String, jsonwebtoken::errors::Error> {
     let secret: String =
         std::env::var("JWT_SECRET").expect("`JWT_SECRET` must be defined in `.env`.");
 
@@ -18,8 +21,9 @@ fn sign_token(id: &i64, role: &String) -> Result<String, jsonwebtoken::errors::E
     let exp: i64 = iat + Duration::days(30).num_seconds();
 
     let claims: Claims = Claims {
-        sub: id.to_owned(),
-        role: role.to_owned(),
+        sub: user.id,
+        role: user.role.as_str().to_owned(),
+        username: user.username.as_str().to_owned(),
         iat,
         exp,
     };
@@ -57,10 +61,11 @@ pub async fn read_token(req: HttpRequest) -> Result<HttpResponse, Error> {
         .get::<Claims>()
         .ok_or_else(|| error::ErrorUnauthorized("No token."))?;
 
-    Ok(HttpResponse::Ok().json(json!({
-        "id": &claims.sub,
-        "role": &claims.role
-    })))
+    Ok(HttpResponse::Ok().json(dtos::User {
+        id: claims.sub,
+        role: claims.role.as_str().to_owned(),
+        username: claims.username.as_str().to_owned(),
+    }))
 }
 
 /// Handles user login and assigns a JWT
@@ -98,7 +103,7 @@ pub async fn read_token(req: HttpRequest) -> Result<HttpResponse, Error> {
 /// }
 /// ```
 pub async fn login(
-    body: web::Json<NewUser>,
+    body: web::Json<models::NewUser>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     // Validate body
@@ -110,7 +115,7 @@ pub async fn login(
         .get()
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
-    let query: Option<User> = conn
+    let query: Option<models::User> = conn
         .query_row(
             r#"
             SELECT *
@@ -118,7 +123,7 @@ pub async fn login(
             WHERE username = ?1;
             "#,
             [&body.username],
-            |row| User::from_row(row),
+            |row| models::User::from_row(row),
         )
         .optional()
         .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
@@ -130,15 +135,15 @@ pub async fn login(
                 .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
             if !is_password_correct {
-                return Ok(HttpResponse::Unauthorized().json(json!({
-                    "error": "Unauthorized",
-                    "message": "Incorrect username or password."
-                })));
+                return Ok(HttpResponse::Unauthorized().json(global::Error {
+                    error: "Unauthorized".to_string(),
+                    message: "Incorrect username or password.".to_string(),
+                }));
             }
 
             // Sign a token
-            let token: String = sign_token(&user.id, &user.role)
-                .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+            let token: String =
+                sign_token(&user).map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
             let cookie = Cookie::build("Authorization", token.clone())
                 .http_only(true)
@@ -146,17 +151,17 @@ pub async fn login(
                 .path("/")
                 .finish();
 
-            return Ok(HttpResponse::Ok().cookie(cookie).json(json!({
-                "id": &user.id,
-                "username": &user.username,
-                "role": &user.role
-            })));
+            return Ok(HttpResponse::Ok().cookie(cookie).json(dtos::User {
+                id: user.id,
+                role: user.role.as_str().to_owned(),
+                username: user.username.as_str().to_owned(),
+            }));
         }
         None => {
-            return Ok(HttpResponse::NotFound().json(json!({
-                "error": "NotFound",
-                "message": "User not found."
-            })));
+            return Ok(HttpResponse::NotFound().json(global::Error {
+                error: "NotFound".to_string(),
+                message: "User not found.".to_string(),
+            }));
         }
     };
 }
@@ -197,7 +202,7 @@ pub async fn login(
 /// }
 /// ```
 pub async fn register(
-    body: web::Json<NewUser>,
+    body: web::Json<models::NewUser>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     // Validate body
@@ -226,8 +231,10 @@ pub async fn register(
         .is_some();
 
     if user_exists {
-        return Ok(HttpResponse::Conflict()
-            .json(json!({"error": "BadRequest", "message": "Username taken."})));
+        return Ok(HttpResponse::Conflict().json(global::Error {
+            error: "BadRequest".to_string(),
+            message: "Username taken.".to_string(),
+        }));
     }
 
     // Hash the password and insert it into the database
@@ -243,8 +250,16 @@ pub async fn register(
     )
     .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
-    let token = sign_token(&conn.last_insert_rowid(), &"user".to_string())
-        .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
+    let new_user: models::User = models::User {
+        id: conn.last_insert_rowid(),
+        username: body.username.as_str().to_owned(),
+        password: "".to_string(),
+        role: "user".to_string(),
+        created_at: Utc::now(),
+    };
+
+    let token =
+        sign_token(&new_user).map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
     let cookie = Cookie::build("Authorization", token.clone())
         .http_only(true)
@@ -252,17 +267,17 @@ pub async fn register(
         .path("/")
         .finish();
 
-    Ok(HttpResponse::Created().cookie(cookie).json(json!({
-        "id": conn.last_insert_rowid(),
-        "username": &body.username,
-        "role": "user"
-    })))
+    Ok(HttpResponse::Created().cookie(cookie).json(dtos::User {
+        id: conn.last_insert_rowid(),
+        role: "user".to_owned(),
+        username: body.username.as_str().to_owned(),
+    }))
 }
 
-pub async fn change_password() -> impl Responder {
-    HttpResponse::NotImplemented()
+pub async fn change_password() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::NotImplemented().finish())
 }
 
-pub async fn change_username() -> impl Responder {
-    HttpResponse::NotImplemented()
+pub async fn change_username() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::NotImplemented().finish())
 }

@@ -1,8 +1,8 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, sync::LazyLock};
-use validator::{Validate, ValidationError};
+use std::sync::LazyLock;
+use validator::Validate;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
@@ -51,14 +51,4 @@ pub struct NewUser {
     #[validate(length(min = 6, max = 1024))]
     #[validate(regex(path = *RE_PASSWORD))]
     pub password: String,
-}
-
-fn validate_role(role: &str) -> Result<(), ValidationError> {
-    if ["admin", "moderator", "user"].contains(&role) {
-        return Ok(());
-    }
-
-    Err(ValidationError::new("value_error").with_message(Cow::from(
-        "Role invalid.  Valid roles: [\"admin\", \"moderator\", \"user\"]",
-    )))
 }

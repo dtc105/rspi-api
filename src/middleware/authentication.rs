@@ -3,9 +3,7 @@ use actix_web::{
     body::{BoxBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
     http::header,
-    web::Json,
 };
-use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{Algorithm::HS256, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
@@ -16,6 +14,7 @@ use std::future::{Ready, ready};
 pub struct Claims {
     pub sub: i64,
     pub role: String,
+    pub username: String,
     pub iat: i64,
     pub exp: i64,
 }
@@ -67,12 +66,12 @@ where
                 &Validation::new(HS256),
             ) {
                 Ok(data) => data.claims,
-                Err(e) => {
+                Err(_) => {
                     return Box::pin(async move {
                         Ok(req.into_response(
                             HttpResponse::Unauthorized()
                                 .content_type(header::ContentType::json())
-                                .json(json!({"error": "Unauthorized", "message": "78 Must login."}))
+                                .json(json!({"error": "Unauthorized", "message": "Must login."}))
                                 .map_into_boxed_body(),
                         ))
                     });
@@ -83,7 +82,7 @@ where
                     Ok(req.into_response(
                         HttpResponse::Unauthorized()
                             .content_type(header::ContentType::json())
-                            .json(json!({"error": "Unauthorized", "message": "89 Must login."}))
+                            .json(json!({"error": "Unauthorized", "message": "Must login."}))
                             .map_into_boxed_body(),
                     ))
                 });

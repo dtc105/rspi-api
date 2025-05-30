@@ -8,7 +8,7 @@ pub fn router(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
             .configure(auth::router)
-            //.service(counter::router())
+            .configure(counter::router)
             .configure(raspi::router),
     );
 }
