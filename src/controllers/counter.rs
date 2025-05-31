@@ -1,10 +1,4 @@
-use std::u32;
-
-use crate::{
-    config::database::AppState,
-    dtos::counter as dtos,
-    models::counter::{self as models, Summary},
-};
+use crate::config::database::AppState;
 
 use actix_web::{Error, HttpResponse, error, web};
 
@@ -12,9 +6,11 @@ pub async fn get_all(
     query: web::Query<dtos::Pagination>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
+    // Initialize the variables
     let page: u32 = query.page.clamp(1, u32::MAX);
     let limit: u32 = query.limit.clamp(1, 100);
 
+    // Get a connection to the database
     let conn = state
         .pool
         .get()
@@ -62,7 +58,14 @@ pub async fn get_all(
     }))
 }
 
-pub async fn get_all_users() -> Result<HttpResponse, Error> {
+pub async fn get_all_users(
+    query: web::Query<dtos::Pagination>,
+    state: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    // Initialize the variables
+    let page: u32 = query.page.clamp(1, u32::MAX);
+    let limit: u32 = query.limit.clamp(1, 100);
+
     Ok(HttpResponse::NotImplemented().finish())
 }
 

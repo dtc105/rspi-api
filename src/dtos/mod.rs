@@ -1,4 +1,3 @@
-pub mod auth;
-pub mod counter;
-pub mod global;
-pub mod raspi;
+pub mod errors;
+pub mod requests;
+pub mod responses;

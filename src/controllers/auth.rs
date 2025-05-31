@@ -1,12 +1,11 @@
 use crate::{
     config::database::AppState,
-    dtos::{auth as dtos, global},
+    dtos::{errors, requests::auth as requests, responses::auth as responses},
     middleware::authentication::Claims,
     models::auth as models,
 };
 
-use actix_web::{Error, HttpResponse, cookie::Cookie, error, web};
-use actix_web::{HttpMessage, HttpRequest};
+use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse, cookie::Cookie, error, web};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
@@ -61,7 +60,7 @@ pub async fn read_token(req: HttpRequest) -> Result<HttpResponse, Error> {
         .get::<Claims>()
         .ok_or_else(|| error::ErrorUnauthorized("No token."))?;
 
-    Ok(HttpResponse::Ok().json(dtos::User {
+    Ok(HttpResponse::Ok().json(responses::Response {
         id: claims.sub,
         role: claims.role.as_str().to_owned(),
         username: claims.username.as_str().to_owned(),
@@ -103,7 +102,7 @@ pub async fn read_token(req: HttpRequest) -> Result<HttpResponse, Error> {
 /// }
 /// ```
 pub async fn login(
-    body: web::Json<models::NewUser>,
+    body: web::Json<requests::Credentials>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     // Validate body
@@ -135,7 +134,7 @@ pub async fn login(
                 .map_err(|e| error::ErrorInternalServerError(e.to_string()))?;
 
             if !is_password_correct {
-                return Ok(HttpResponse::Unauthorized().json(global::Error {
+                return Ok(HttpResponse::Unauthorized().json(errors::global::Generic {
                     error: "Unauthorized".to_string(),
                     message: "Incorrect username or password.".to_string(),
                 }));
@@ -151,14 +150,14 @@ pub async fn login(
                 .path("/")
                 .finish();
 
-            return Ok(HttpResponse::Ok().cookie(cookie).json(dtos::User {
+            return Ok(HttpResponse::Ok().cookie(cookie).json(responses::Response {
                 id: user.id,
                 role: user.role.as_str().to_owned(),
                 username: user.username.as_str().to_owned(),
             }));
         }
         None => {
-            return Ok(HttpResponse::NotFound().json(global::Error {
+            return Ok(HttpResponse::NotFound().json(errors::global::Generic {
                 error: "NotFound".to_string(),
                 message: "User not found.".to_string(),
             }));
@@ -202,7 +201,7 @@ pub async fn login(
 /// }
 /// ```
 pub async fn register(
-    body: web::Json<models::NewUser>,
+    body: web::Json<requests::Credentials>,
     state: web::Data<AppState>,
 ) -> Result<HttpResponse, Error> {
     // Validate body
@@ -231,7 +230,7 @@ pub async fn register(
         .is_some();
 
     if user_exists {
-        return Ok(HttpResponse::Conflict().json(global::Error {
+        return Ok(HttpResponse::Conflict().json(errors::global::Generic {
             error: "BadRequest".to_string(),
             message: "Username taken.".to_string(),
         }));
@@ -255,7 +254,7 @@ pub async fn register(
         username: body.username.as_str().to_owned(),
         password: "".to_string(),
         role: "user".to_string(),
-        created_at: Utc::now(),
+        created_at: Utc::now().naive_utc(),
     };
 
     let token =
@@ -267,11 +266,13 @@ pub async fn register(
         .path("/")
         .finish();
 
-    Ok(HttpResponse::Created().cookie(cookie).json(dtos::User {
-        id: conn.last_insert_rowid(),
-        role: "user".to_owned(),
-        username: body.username.as_str().to_owned(),
-    }))
+    Ok(HttpResponse::Created()
+        .cookie(cookie)
+        .json(responses::Response {
+            id: conn.last_insert_rowid(),
+            role: "user".to_owned(),
+            username: body.username.as_str().to_owned(),
+        }))
 }
 
 pub async fn change_password() -> Result<HttpResponse, Error> {

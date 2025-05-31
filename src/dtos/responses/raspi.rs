@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum FloatOrString {
     Float(f32),
     String(String),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SystemUptime {
     #[serde(rename = "upTime")]
     pub up_time: FloatOrString,
@@ -15,7 +15,7 @@ pub struct SystemUptime {
     pub idle_time: FloatOrString,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SystemInfo {
     #[serde(rename = "cpuTemp")]
     pub cpu_temp: FloatOrString,
