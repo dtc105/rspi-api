@@ -367,21 +367,6 @@ pub async fn get_all_users(
     let has_next = page < total_pages;
     let has_prev = page > 1;
 
-    let meta = PartMeta {
-        pagination: Pagination {
-            page,
-            limit,
-            total_rows,
-            total_pages,
-            has_next,
-            has_prev,
-        },
-        sort: Sort {
-            by: "count".to_string(),
-            order,
-        },
-    };
-
     let links = Links {
         own: format!("/counter?page={page}&limit={limit}&order={order}"),
         first: format!("/counter?page=1&limit={limit}&order={order}"),
@@ -401,6 +386,21 @@ pub async fn get_all_users(
             ))
         } else {
             None
+        },
+    };
+
+    let meta = PartMeta {
+        pagination: Pagination {
+            page,
+            limit,
+            total_rows,
+            total_pages,
+            has_next,
+            has_prev,
+        },
+        sort: Sort {
+            by: "count".to_string(),
+            order,
         },
     };
 
@@ -527,21 +527,6 @@ pub async fn get_all_words(
     let has_next = page < total_pages;
     let has_prev = page > 1;
 
-    let meta = PartMeta {
-        pagination: Pagination {
-            page,
-            limit,
-            total_rows,
-            total_pages,
-            has_next,
-            has_prev,
-        },
-        sort: Sort {
-            by: "count".to_string(),
-            order,
-        },
-    };
-
     let links = Links {
         own: format!("/counter?page={page}&limit={limit}&order={order}"),
         first: format!("/counter?page=1&limit={limit}&order={order}"),
@@ -561,6 +546,21 @@ pub async fn get_all_words(
             ))
         } else {
             None
+        },
+    };
+
+    let meta = PartMeta {
+        pagination: Pagination {
+            page,
+            limit,
+            total_rows,
+            total_pages,
+            has_next,
+            has_prev,
+        },
+        sort: Sort {
+            by: "count".to_string(),
+            order,
         },
     };
 
