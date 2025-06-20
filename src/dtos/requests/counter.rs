@@ -1,5 +1,9 @@
+use regex::Regex;
 use serde::Deserialize;
+use std::sync::LazyLock;
 use validator::Validate;
+
+static RE_STRING: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[a-zA-Z0-9\-_]*$").unwrap());
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct QueryParams {
@@ -10,12 +14,15 @@ pub struct QueryParams {
     pub limit: Option<u32>,
 
     #[validate(contains(pattern = "asc|desc"))]
+    #[validate(regex(path = *RE_STRING))]
     pub order: Option<String>,
 
     #[validate(length(min = 3, max = 32))]
+    #[validate(regex(path = *RE_STRING))]
     pub username: Option<String>,
 
     #[validate(length(min = 1, max = 2000))]
+    #[validate(regex(path = *RE_STRING))]
     pub word: Option<String>,
 }
 
@@ -48,6 +55,7 @@ pub struct QueryPagination {
     pub limit: Option<u32>,
 
     #[validate(contains(pattern = "asc|desc"))]
+    #[validate(regex(path = *RE_STRING))]
     pub order: Option<String>,
 }
 

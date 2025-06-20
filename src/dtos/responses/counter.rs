@@ -1,3 +1,4 @@
+use crate::utils::string;
 use rusqlite::{Error, Row};
 use serde::Serialize;
 
@@ -12,15 +13,32 @@ pub struct Data {
     pub username: String,
     pub word: String,
     pub count: u32,
+    pub similarity: Option<f32>,
 }
 
 impl Data {
-    pub fn from_row(row: &Row) -> Result<Self, Error> {
-        let username: String = row.get("username")?;
+    pub fn from_row(
+        row: &Row,
+        username: &Option<String>,
+        word: &Option<String>,
+    ) -> Result<Self, Error> {
+        let row_username: String = row.get("username")?;
+        let row_word: String = row.get("word")?;
+        let similarity: Option<f32>;
+
+        if let Some(u) = username {
+            similarity = Some(string::similarity(&row_username, u));
+        } else if let Some(w) = word {
+            similarity = Some(string::similarity(&row_word, w));
+        } else {
+            similarity = None;
+        }
+
         Ok(Self {
-            username: username.clone(),
-            word: row.get("word")?,
+            username: row_username,
+            word: row_word,
             count: row.get("count")?,
+            similarity: similarity,
         })
     }
 }

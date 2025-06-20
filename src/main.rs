@@ -4,6 +4,7 @@ mod dtos;
 mod middleware;
 mod models;
 mod routes;
+mod utils;
 
 use actix_web::{App, HttpServer, dev::Server, middleware::Logger, web};
 use config::{cors, database, dotenv};
